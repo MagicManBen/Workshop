@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Workshop Inventory</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <!-- Login screen -->
+  <div id="login" class="login hidden">
+    <form id="loginForm" class="login-card">
+      <h1>Workshop Inventory</h1>
+      <label class="field">Email
+        <input id="loginEmail" type="email" autocomplete="username" required />
+      </label>
+      <label class="field">Password
+        <input id="loginPassword" type="password" autocomplete="current-password" required />
+      </label>
+      <button class="btn" type="submit">Sign in</button>
+      <p id="loginError" class="error"></p>
+    </form>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <button id="navToggle" class="icon-btn" aria-label="Menu">☰</button>
+      <span class="brand">Workshop</span>
+      <span id="svcStatus" class="svc-status" title="Print service status"></span>
+      <button id="signOut" class="icon-btn" title="Sign out">⎋</button>
+    </header>
+    <nav id="nav" class="nav">
+      <a href="#browse" data-route="browse">🔍 Browse &amp; Search</a>
+      <a href="#addbox" data-route="addbox">📦 Add Box</a>
+      <a href="#additem" data-route="additem">➕ Add Item</a>
+      <a href="#setup" data-route="setup">⚙️ Setup</a>
+    </nav>
+    <main id="view" class="view"></main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
