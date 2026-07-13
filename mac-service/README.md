@@ -113,6 +113,52 @@ Selecting `MockPrinter` lets you exercise the whole flow without hardware.
 
 ---
 
+## Supabase print queue (Section 3)
+
+When Supabase is configured, the service also runs a background worker that
+consumes the `workshop.print_jobs` queue, so a job created from any device
+(e.g. the future web app) is printed by this always-on Mac.
+
+### Enable
+
+Copy `.env.example` to `.env` and set the Supabase values:
+
+```bash
+SUPABASE_URL=https://<your-project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>   # server-side only, never in a browser
+SUPABASE_SCHEMA=workshop
+```
+
+Restart the service. The **Supabase queue worker** indicator on the control
+page shows online/offline; a heartbeat is written to
+`workshop.service_heartbeats` every ~15s.
+
+### How it works
+
+* The worker claims jobs atomically via the `claim_next_print_job` RPC
+  (`FOR UPDATE SKIP LOCKED`), so a job is never printed twice — even with two
+  instances or a mid-print restart.
+* On a successful print the job is marked `completed` and the box's
+  `label_printed_at` is stamped.
+* On startup, any job this worker left `processing` (e.g. a crash) is marked
+  `failed` so it can be safely reprinted rather than silently double-printed.
+* The RPCs are granted to `service_role` only; `anon`/`authenticated` cannot
+  claim jobs, and the queue is not publicly writable.
+
+### Test the full loop
+
+With the service running and Supabase configured:
+
+```bash
+curl -X POST http://127.0.0.1:8765/api/supabase/enqueue \
+  -H 'Content-Type: application/json' -d '{"identifier":"1234567890"}'
+```
+
+Within a few seconds the worker prints the label and the job's status becomes
+`completed` in Supabase.
+
+---
+
 ## Project layout
 
 ```

@@ -54,6 +54,7 @@
   <div class="card">
     <h2>Printer</h2>
     <div id="printerInfo" class="row"><span class="muted">Checking…</span></div>
+    <div id="supabaseInfo" class="row" style="margin-top:8px"></div>
   </div>
 
   <div class="card">
@@ -134,6 +135,24 @@ async function refresh() {
   $('cfgW').value = L.width_mm; $('cfgH').value = L.height_mm;
   $('cfgMargin').value = L.margin_mm; $('cfgDpi').value = L.dpi;
   loadHistory();
+  loadSupabase();
+}
+
+async function loadSupabase() {
+  try {
+    const r = await fetch('/api/supabase/status'); const d = await r.json();
+    const el = $('supabaseInfo');
+    if (!d.configured) {
+      el.innerHTML = '<span style="color:var(--muted)">Supabase queue: ' +
+        'not configured (local printing only)</span>';
+      return;
+    }
+    const online = d.worker_status === 'online';
+    el.innerHTML =
+      '<span style="color:var(--muted)">Supabase queue worker:</span> ' +
+      `<span class="pill ${online?'completed':'failed'}">${d.worker_status}</span>` +
+      `<span style="color:var(--muted)">${d.service_name}</span>`;
+  } catch(e) { /* ignore */ }
 }
 
 function showMsg(text, ok) {

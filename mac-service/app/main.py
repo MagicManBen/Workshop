@@ -21,17 +21,32 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
+from contextlib import asynccontextmanager
+
 from . import config as config_mod
 from . import history
+from . import settings
+from . import supabase_client as sb
 from .label import save_label_png
 from .logging_setup import get_logger
 from .paths import BASE_DIR, SPOOL_DIR
+from .poller import PrintQueueWorker
 from .printing import CupsPrinter, MockPrinter, list_printers
 
 log = get_logger()
 history.init_db()
 
-app = FastAPI(title="Workshop Label Service", version="1.0")
+worker = PrintQueueWorker()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    worker.start()
+    yield
+    worker.stop()
+
+
+app = FastAPI(title="Workshop Label Service", version="1.0", lifespan=lifespan)
 
 TEMPLATES = BASE_DIR / "templates"
 
@@ -118,6 +133,34 @@ def api_reprint(job_id: int) -> JSONResponse:
 @app.get("/api/history")
 def api_history() -> dict:
     return {"jobs": history.recent(50)}
+
+
+@app.get("/api/supabase/status")
+def api_supabase_status() -> dict:
+    """Report whether the Supabase print-queue worker is configured/running."""
+    return {
+        "configured": settings.supabase_configured(),
+        "worker_id": worker.worker_id,
+        "worker_status": worker.last_status,
+        "service_name": settings.SERVICE_NAME,
+    }
+
+
+class EnqueueRequest(BaseModel):
+    identifier: str
+
+
+@app.post("/api/supabase/enqueue")
+def api_supabase_enqueue(req: EnqueueRequest) -> JSONResponse:
+    """Create a print job in Supabase (for end-to-end testing of the queue)."""
+    if not settings.supabase_configured():
+        raise HTTPException(status_code=503, detail="Supabase not configured.")
+    identifier = _validate_id(req.identifier)
+    try:
+        job = sb.insert_print_job(identifier)
+    except sb.SupabaseError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return JSONResponse(status_code=201, content={"ok": True, "job": job})
 
 
 class ConfigUpdate(BaseModel):
