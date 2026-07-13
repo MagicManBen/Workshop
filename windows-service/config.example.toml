@@ -1,0 +1,47 @@
+# -----------------------------------------------------------------------------
+# Workshop Label Service — example configuration
+#
+# Copy this file to `config.toml` (next to the app / exe, or in the data dir)
+# and edit as needed. All values are also editable from the browser UI and are
+# persisted back to `config.toml`.
+#
+# The label stock currently loaded is 55 x 25 mm die-cut. At 203 dpi
+# (8 dots/mm) that is ~440 x 200 dots. Nothing here is hard-coded in the app;
+# change these values if you swap label stock.
+# -----------------------------------------------------------------------------
+
+[label]
+# Physical label size in millimetres. Fully configurable.
+width_mm = 55.0
+height_mm = 25.0
+# Printer resolution in dots-per-inch. Brother TD-2120N is 203 dpi.
+dpi = 203
+# White margin (quiet space) around the whole label, in millimetres.
+margin_mm = 2.0
+
+[qr]
+# Error-correction level: L, M, Q or H. Section 1 requires Q.
+ecc = "Q"
+# Quiet zone around the QR, measured in QR modules. Minimum 4 required.
+quiet_zone = 4
+# Where to place the QR relative to the text: "left" or "right".
+position = "left"
+
+[text]
+# Path to a .ttf/.otf font file. Leave empty to auto-pick a system font.
+font = ""
+# Font size in points. 0 = auto-size to fit the label height.
+font_size = 0
+# Insert a thin space every N digits for human readability (0 = off).
+group_digits = 0
+
+[printer]
+# Windows printer/queue name. Leave empty to auto-detect a Brother TD-2120N.
+name = ""
+
+[app]
+# When true, printing is simulated (no paper used) but history is still recorded.
+preview_only = false
+# Host/port for the local control UI. Bound to localhost only.
+host = "127.0.0.1"
+port = 8765

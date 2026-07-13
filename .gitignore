@@ -1,0 +1,44 @@
+# --- Secrets / environment ---
+.env
+*.env
+!*.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.installed.cfg
+*.egg
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- PyInstaller build output ---
+build/
+dist/
+*.spec.bak
+
+# --- Runtime data (local only, never commit) ---
+windows-service/data/
+data/
+*.db
+*.sqlite
+*.sqlite3
+logs/
+*.log
+
+# --- Local runtime config (committed example only) ---
+windows-service/config.toml
+config.toml
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+*.swp

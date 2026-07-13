@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workshop Label Service</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Workshop Label Service</h1>
+      <span class="version">v{{ version }} · localhost only</span>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <span id="preview-mode-badge" class="pill warn" style="display:none;"></span>
+      <span id="printer-status" class="pill warn"><span class="dot"></span> checking…</span>
+      <button class="secondary" id="btn-refresh">Refresh</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Print panel -->
+    <section class="panel">
+      <h2>Print a label</h2>
+      <label class="field">
+        <span>10-digit box identifier</span>
+        <input type="text" id="code" class="code" inputmode="numeric"
+               maxlength="10" placeholder="0000000000" autocomplete="off" />
+      </label>
+      <div class="hint">
+        Scan with the Tera scanner or type a code, then press Enter to preview.
+      </div>
+      <div class="btnrow">
+        <button id="btn-preview" class="secondary">Preview</button>
+        <button id="btn-print">Print</button>
+        <button id="btn-print-preview" class="ghost">Preview-only (no paper)</button>
+        <button id="btn-test" class="secondary">Print test label</button>
+      </div>
+      <div id="preview-wrap">
+        <img id="preview-img" alt="Label preview" style="display:none;" />
+      </div>
+      <div class="hint" id="label-dims">—</div>
+    </section>
+
+    <!-- Config panel -->
+    <section class="panel">
+      <h2>Configuration</h2>
+      <div class="grid3">
+        <label class="field"><span>Width (mm)</span>
+          <input type="number" step="0.1" id="c_width" /></label>
+        <label class="field"><span>Height (mm)</span>
+          <input type="number" step="0.1" id="c_height" /></label>
+        <label class="field"><span>DPI</span>
+          <input type="number" step="1" id="c_dpi" /></label>
+      </div>
+      <div class="grid3">
+        <label class="field"><span>Margin (mm)</span>
+          <input type="number" step="0.1" id="c_margin" /></label>
+        <label class="field"><span>QR ECC</span>
+          <select id="c_ecc">
+            <option value="L">L</option><option value="M">M</option>
+            <option value="Q">Q</option><option value="H">H</option>
+          </select></label>
+        <label class="field"><span>Quiet zone (modules)</span>
+          <input type="number" step="1" min="4" id="c_quiet" /></label>
+      </div>
+      <div class="grid3">
+        <label class="field"><span>QR position</span>
+          <select id="c_position">
+            <option value="left">left</option><option value="right">right</option>
+          </select></label>
+        <label class="field"><span>Font size (0=auto)</span>
+          <input type="number" step="1" min="0" id="c_fontsize" /></label>
+        <label class="field"><span>Group digits (0=off)</span>
+          <input type="number" step="1" min="0" id="c_group" /></label>
+      </div>
+      <label class="field"><span>Font file (blank = auto)</span>
+        <input type="text" id="c_font" placeholder="C:\Windows\Fonts\consolab.ttf" /></label>
+      <label class="field"><span>Printer</span>
+        <select id="printer-list"></select></label>
+      <input type="hidden" id="c_printer" />
+      <div class="checkbox-row">
+        <input type="checkbox" id="c_preview" />
+        <label for="c_preview">Preview-only mode (never sends to printer)</label>
+      </div>
+      <div class="btnrow">
+        <button id="btn-save-config">Save configuration</button>
+      </div>
+    </section>
+
+    <!-- History panel -->
+    <section class="panel full">
+      <h2>History</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Code</th><th>Action</th><th>Result</th>
+            <th>When (UTC)</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

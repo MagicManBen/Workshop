@@ -1,0 +1,20 @@
+# Workshop Inventory System — Section 1: Windows Workshop Printing Service
+#
+# Runtime dependencies. Install with:
+#   pip install -r requirements.txt
+#
+# Note: pywin32 is Windows-only and is required for driver/GDI printing.
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+jinja2==3.1.5
+python-multipart==0.0.20
+pillow==11.1.0
+segno==1.6.1
+tomli-w==1.1.0
+
+# Windows-only: printer enumeration + GDI printing
+pywin32==308; sys_platform == "win32"
+
+# Build-time only (kept here for convenience; used by build.ps1)
+pyinstaller==6.11.1
