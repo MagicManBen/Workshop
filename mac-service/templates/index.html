@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Workshop Label Service</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --fg:#e2e8f0; --muted:#94a3b8;
+          --accent:#38bdf8; --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",
+         Roboto,sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:16px 20px; border-bottom:1px solid #334155;
+           display:flex; align-items:center; gap:12px; }
+  h1 { font-size:18px; margin:0; }
+  main { max-width:760px; margin:0 auto; padding:20px; display:grid; gap:20px; }
+  .card { background:var(--card); border:1px solid #334155; border-radius:12px;
+          padding:18px; }
+  .card h2 { margin:0 0 12px; font-size:15px; color:var(--muted);
+             text-transform:uppercase; letter-spacing:.05em; }
+  .status-dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  input[type=text] { flex:1; min-width:180px; font-size:20px; padding:12px;
+    border-radius:8px; border:1px solid #475569; background:#0f172a;
+    color:var(--fg); letter-spacing:2px; }
+  button { font-size:16px; padding:12px 18px; border-radius:8px; border:none;
+    background:var(--accent); color:#04263a; font-weight:600; cursor:pointer; }
+  button.secondary { background:#334155; color:var(--fg); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  #preview { max-width:100%; background:#fff; border-radius:8px; padding:8px;
+    display:none; }
+  .msg { padding:10px 12px; border-radius:8px; font-size:14px; display:none; }
+  .msg.ok { background:rgba(34,197,94,.15); color:#86efac; display:block; }
+  .msg.bad { background:rgba(239,68,68,.15); color:#fca5a5; display:block; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { text-align:left; padding:6px 8px; border-bottom:1px solid #334155; }
+  .pill { padding:2px 8px; border-radius:999px; font-size:12px; }
+  .pill.completed { background:rgba(34,197,94,.2); color:#86efac; }
+  .pill.failed { background:rgba(239,68,68,.2); color:#fca5a5; }
+  details summary { cursor:pointer; color:var(--muted); }
+  label.field { display:flex; flex-direction:column; gap:4px; font-size:13px;
+    color:var(--muted); }
+  label.field input,label.field select { padding:8px; border-radius:6px;
+    border:1px solid #475569; background:#0f172a; color:var(--fg); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+</style>
+</head>
+<body>
+<header>
+  <span id="dot" class="status-dot" style="background:var(--muted)"></span>
+  <h1>Workshop Label Service</h1>
+</header>
+<main>
+  <div class="card">
+    <h2>Printer</h2>
+    <div id="printerInfo" class="row"><span class="muted">Checking…</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Print a label</h2>
+    <div class="row">
+      <input id="code" type="text" inputmode="numeric" maxlength="10"
+             placeholder="10-digit box code" autocomplete="off" />
+      <button class="secondary" onclick="preview()">Preview</button>
+      <button onclick="printLabel()">Print</button>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin:8px 0 0">
+      Preview renders the label without printing (no stock wasted).</p>
+    <div id="msg" class="msg"></div>
+    <img id="preview" alt="label preview" />
+  </div>
+
+  <div class="card">
+    <h2>Quick actions</h2>
+    <div class="row">
+      <button class="secondary" onclick="testPrint()">Print test label</button>
+      <button class="secondary" onclick="refresh()">Refresh status</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>History</h2>
+    <table id="history"><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>Configuration</summary>
+      <div class="grid2" style="margin-top:12px">
+        <label class="field">Printer queue
+          <select id="cfgPrinter"></select></label>
+        <label class="field">Layout
+          <select id="cfgLayout">
+            <option value="fold">fold (two QRs)</option>
+            <option value="single">single</option>
+          </select></label>
+        <label class="field">Width (mm)
+          <input id="cfgW" type="number" step="0.1" /></label>
+        <label class="field">Height (mm)
+          <input id="cfgH" type="number" step="0.1" /></label>
+        <label class="field">Margin (mm)
+          <input id="cfgMargin" type="number" step="0.1" /></label>
+        <label class="field">DPI
+          <input id="cfgDpi" type="number" /></label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button onclick="saveConfig()">Save configuration</button>
+      </div>
+    </details>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function refresh() {
+  const r = await fetch('/api/status');
+  const d = await r.json();
+  const dot = $('dot');
+  dot.style.background = d.available ? 'var(--ok)' : 'var(--bad)';
+  $('printerInfo').innerHTML =
+    `<strong>${d.printer || '(none)'}</strong>` +
+    `<span class="pill ${d.available?'completed':'failed'}">` +
+    `${d.available?'available':'unavailable'}</span>` +
+    `<span style="color:var(--muted)">${d.detail||''}</span>`;
+  // config form
+  const sel = $('cfgPrinter'); sel.innerHTML='';
+  (d.printers||[]).concat(['MockPrinter']).forEach(p=>{
+    const o=document.createElement('option'); o.value=p; o.textContent=p;
+    if(p===d.printer) o.selected=true; sel.appendChild(o);
+  });
+  const L = d.config.label||{};
+  $('cfgLayout').value = L.layout||'fold';
+  $('cfgW').value = L.width_mm; $('cfgH').value = L.height_mm;
+  $('cfgMargin').value = L.margin_mm; $('cfgDpi').value = L.dpi;
+  loadHistory();
+}
+
+function showMsg(text, ok) {
+  const m=$('msg'); m.textContent=text; m.className='msg '+(ok?'ok':'bad');
+}
+
+function validCode() {
+  const c = $('code').value.trim();
+  if(!/^\d{10}$/.test(c)){ showMsg('Enter exactly 10 digits.', false); return null; }
+  return c;
+}
+
+async function preview() {
+  const c = validCode(); if(!c) return;
+  const img=$('preview');
+  img.src = `/api/preview?code=${c}&t=${Date.now()}`;
+  img.style.display='block';
+  showMsg('Preview only — nothing printed.', true);
+}
+
+async function printLabel() {
+  const c = validCode(); if(!c) return;
+  await doPrint('/api/print', {identifier:c});
+}
+async function testPrint() { await doPrint('/api/test-print', null); }
+
+async function doPrint(url, body) {
+  showMsg('Sending to printer…', true);
+  const r = await fetch(url, {
+    method:'POST',
+    headers: body?{'Content-Type':'application/json'}:{},
+    body: body?JSON.stringify(body):undefined });
+  const d = await r.json();
+  if(d.ok) showMsg(`Printed ${d.identifier} (job ${d.job_id||'—'}).`, true);
+  else showMsg(`Failed: ${d.detail||'unknown error'}`, false);
+  loadHistory();
+}
+
+async function loadHistory() {
+  const r = await fetch('/api/history'); const d = await r.json();
+  const tb = $('history').querySelector('tbody'); tb.innerHTML='';
+  (d.jobs||[]).forEach(j=>{
+    const tr=document.createElement('tr');
+    const when = (j.created_at||'').replace('T',' ').slice(0,19);
+    tr.innerHTML =
+      `<td>${j.identifier}</td>`+
+      `<td><span class="pill ${j.status}">${j.status}</span></td>`+
+      `<td style="color:var(--muted)">${when}</td>`+
+      `<td><button class="secondary" onclick="reprint(${j.id})">Reprint</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+async function reprint(id) {
+  showMsg('Reprinting…', true);
+  const r = await fetch('/api/reprint/'+id, {method:'POST'});
+  const d = await r.json();
+  if(d.ok) showMsg(`Reprinted ${d.identifier}.`, true);
+  else showMsg(`Failed: ${d.detail||'error'}`, false);
+  loadHistory();
+}
+
+async function saveConfig() {
+  const body = {
+    printer_name: $('cfgPrinter').value,
+    label: {
+      layout: $('cfgLayout').value,
+      width_mm: parseFloat($('cfgW').value),
+      height_mm: parseFloat($('cfgH').value),
+      margin_mm: parseFloat($('cfgMargin').value),
+      dpi: parseInt($('cfgDpi').value,10),
+    }
+  };
+  await fetch('/api/config',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  showMsg('Configuration saved.', true);
+  refresh();
+}
+
+$('code').addEventListener('keydown', e=>{ if(e.key==='Enter') printLabel(); });
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>

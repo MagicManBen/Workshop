@@ -1,0 +1,15 @@
+{
+  "printer_name": "Brother_TD2120N_Test",
+  "label": {
+    "width_mm": 55.0,
+    "height_mm": 25.0,
+    "dpi": 203,
+    "margin_mm": 0.5,
+    "ecc": "q",
+    "quiet_zone_modules": 2,
+    "font_pt": 20,
+    "qr_position": "top",
+    "layout": "fold",
+    "fold_gap_mm": 1.0
+  }
+}

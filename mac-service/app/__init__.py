@@ -1,0 +1,1 @@
+"""Workshop label service package."""
